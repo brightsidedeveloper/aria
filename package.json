@@ -1,0 +1,16 @@
+{
+  "name": "aria",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Tim",
+  "license": "ISC",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.43.3",
+    "dotenv": "^16.4.5",
+    "simple-git": "^3.24.0"
+  }
+}
