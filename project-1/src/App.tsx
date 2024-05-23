@@ -1,3 +1,5 @@
+import Intro from './components/Intro'
+
 export default function App() {
-  return <div>App</div>
+  return <Intro />
 }
