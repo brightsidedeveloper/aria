@@ -1,44 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'
 
 interface Todo {
-  id: number;
-  text: string;
-  completed: boolean;
+  id: number
+  text: string
+  completed: boolean
 }
 
 const TodoList: React.FC = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
-  const [newTodo, setNewTodo] = useState('');
+  const [todos, setTodos] = useState<Todo[]>([])
+  const [newTodo, setNewTodo] = useState('')
 
   useEffect(() => {
-    const storedTodos = localStorage.getItem('todos');
-    if (storedTodos) {
-      setTodos(JSON.parse(storedTodos));
-    }
-  }, []);
+    const storedTodos = localStorage.getItem('todos')
+    if (storedTodos) setTodos(JSON.parse(storedTodos))
+  }, [])
 
   useEffect(() => {
-    localStorage.setItem('todos', JSON.stringify(todos));
-  }, [todos]);
+    localStorage.setItem('todos', JSON.stringify(todos))
+  }, [todos])
 
   const addTodo = () => {
-    if (newTodo.trim() === '') return;
-    const newTask: Todo = { id: Date.now(), text: newTodo, completed: false };
-    setTodos([...todos, newTask]);
-    setNewTodo('');
-  };
+    if (newTodo.trim() === '') return
+    const newTask: Todo = { id: Date.now(), text: newTodo, completed: false }
+    setTodos([...todos, newTask])
+    setNewTodo('')
+  }
 
   const toggleTodo = (id: number) => {
     setTodos(
       todos.map(todo => 
         todo.id === id ? { ...todo, completed: !todo.completed } : todo
       )
-    );
-  };
+    )
+  }
 
   const deleteTodo = (id: number) => {
-    setTodos(todos.filter(todo => todo.id !== id));
-  };
+    setTodos(todos.filter(todo => todo.id !== id))
+  }
 
   return (
     <div className="p-6 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-4">
@@ -80,7 +78,7 @@ const TodoList: React.FC = () => {
         ))}
       </ul>
     </div>
-  );
-};
+  )
+}
 
-export default TodoList;
+export default TodoList
