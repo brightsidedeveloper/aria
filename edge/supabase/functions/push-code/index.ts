@@ -1,10 +1,3 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
-/// <reference types="https://esm.sh/@supabase/functions-js/src/edge-runtime.d.ts" />
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.2'
 
 Deno.serve(async req => {
@@ -38,41 +31,32 @@ Deno.serve(async req => {
     case 'create-file':
       if (!code || !path) return new Response(JSON.stringify({ message: 'Missing code or path!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({ event: 'create-file', type: 'broadcast', payload: { code, path } })
+      await waitForResponse()
       break
     case 'delete-file':
       if (!path) return new Response(JSON.stringify({ message: 'Missing path!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({ event: 'delete-file', type: 'broadcast', payload: { path } })
+      await waitForResponse()
       break
     case 'push-file':
       if (!path) return new Response(JSON.stringify({ message: 'Missing code, path, or commit message!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({ event: 'push-file', type: 'broadcast', payload: { code, path, commitMsg } })
+      await waitForResponse()
       break
     case 'get-file':
       if (!path) return new Response(JSON.stringify({ message: 'Missing path!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({ event: 'get-file', type: 'broadcast', payload: { path } })
       const fileCode = await waitForResponse()
-      if (!fileCode) return new Response(JSON.stringify({ message: 'Tell the user that we timed out.' }), { headers: { 'Content-Type': 'application/json' } })
-      break
+      if (!fileCode) return new Response(JSON.stringify({ message: 'Timeout while waiting for file retrieval.' }), { headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ code: fileCode }), { headers: { 'Content-Type': 'application/json' } })
     case 'get-all-files':
       await channel.send({ event: 'get-all-files', type: 'broadcast', payload: {} })
       const files = await waitForResponse()
-      if (!files) return new Response(JSON.stringify({ message: 'Tell the user that we timed out.' }), { headers: { 'Content-Type': 'application/json' } })
-      break
+      if (!files) return new Response(JSON.stringify({ message: 'Timeout while waiting for all file paths.' }), { headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ files }), { headers: { 'Content-Type': 'application/json' } })
     default:
-      return new Response(JSON.stringify({ message: 'Action does not exist!' }), { headers: { 'Content-Type': 'application/json' } })
+      return new Response(JSON.stringify({ message: 'Invalid action specified!' }), { headers: { 'Content-Type': 'application/json' } })
   }
 
   return new Response(JSON.stringify(responded ? { ...(responded as {}), success: true } : { success: true }), { headers: { 'Content-Type': 'application/json' } })
 })
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/push-code' \
-    --header 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0' \
-    --header 'Content-Type: application/json' \
-    --data '{"name":"Functions"}'
-
-*/
