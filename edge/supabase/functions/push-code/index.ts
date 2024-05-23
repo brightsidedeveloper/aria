@@ -25,7 +25,7 @@ Deno.serve(async req => {
     return await new Promise(resolve => {
       let tries = 0
       const interval = setInterval(() => {
-        if (responded || tries >= 80) {
+        if (responded || tries >= 180) {
           clearInterval(interval)
           resolve(responded)
         }
@@ -51,12 +51,12 @@ Deno.serve(async req => {
       if (!path) return new Response(JSON.stringify({ message: 'Missing path!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({ event: 'get-file', type: 'broadcast', payload: { path } })
       const fileCode = await waitForResponse()
-      if (!fileCode) return new Response(JSON.stringify({ message: 'Failed to retrieve file!' }), { headers: { 'Content-Type': 'application/json' } })
+      if (!fileCode) return new Response(JSON.stringify({ message: 'Tell the user that we timed out.' }), { headers: { 'Content-Type': 'application/json' } })
       break
     case 'get-all-files':
       await channel.send({ event: 'get-all-files', type: 'broadcast', payload: {} })
       const files = await waitForResponse()
-      if (!files) return new Response(JSON.stringify({ message: 'Failed to retrieve all files!' }), { headers: { 'Content-Type': 'application/json' } })
+      if (!files) return new Response(JSON.stringify({ message: 'Tell the user that we timed out.' }), { headers: { 'Content-Type': 'application/json' } })
       break
     default:
       return new Response(JSON.stringify({ message: 'Action does not exist!' }), { headers: { 'Content-Type': 'application/json' } })
