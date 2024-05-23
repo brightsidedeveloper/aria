@@ -1,3 +1,5 @@
+import { exec, spawn } from "child_process"
+
 import fs from "fs"
 import simpleGit from "simple-git"
 import path from "path"
@@ -25,8 +27,9 @@ interface BroadcastPayload {
 
 interface Payload {
   code?: string
-  path: string
   commitMsg?: string
+  command?: string
+  path: string
 }
 
 const handleCreateFile = async ({ code, path: filePath }: Payload) => {
@@ -217,6 +220,91 @@ const handleGetAllFilePaths = async () => {
   console.log(green("Retrieved all file paths successfully"))
 }
 
+let devProcess: ReturnType<typeof spawn> | null = null
+
+const stopDevServer = (fromStart?: boolean) => {
+  if (devProcess) {
+    devProcess.kill("SIGINT")
+    console.log("Development server stopped.")
+    if (!fromStart)
+      channel.send({
+        event: "stop-dev-server",
+        type: "broadcast",
+        payload: { message: "Development server stopped" },
+      })
+  } else {
+    console.log("No development server is running.")
+    if (!fromStart)
+      channel.send({
+        event: "stop-dev-server",
+        type: "broadcast",
+        payload: { message: "No development server is running" },
+      })
+  }
+}
+
+const startDevServer = ({ path: filePath }: Payload) => {
+  if (!filePath) {
+    channel.send({
+      event: "start-dev-server",
+      type: "broadcast",
+      payload: { message: "Invalid payload: Missing path" },
+    })
+    return
+  }
+  if (devProcess) stopDevServer(true)
+  const projectDir = path.join(__dirname, filePath)
+  devProcess = spawn("npm", ["run", "dev"], {
+    cwd: projectDir,
+    stdio: "inherit",
+  })
+  console.log("Development server started...")
+  channel.send({
+    event: "start-dev-server",
+    type: "broadcast",
+    payload: { message: "Development server started" },
+  })
+}
+
+const runCommand = ({ command, path: filePath }: Payload) => {
+  if (!command || !filePath) {
+    channel.send({
+      event: "run-command",
+      type: "broadcast",
+      payload: { message: "Invalid payload: Missing command or path" },
+    })
+    return
+  }
+  const projectDir = path.join(__dirname, filePath)
+  console.log(blueBright(`Running command: ${command}`))
+  exec(command, { cwd: projectDir }, (error, stdout, stderr) => {
+    if (error) {
+      console.error(`Error: ${error.message}`)
+      channel.send({
+        event: "run-command",
+        type: "broadcast",
+        payload: { message: "Error running exec: " + error.message },
+      })
+      return
+    }
+    if (stderr) {
+      console.error(`Stderr: ${stderr}`)
+      channel.send({
+        event: "run-command",
+        type: "broadcast",
+        payload: { message: "Error in stdout: " + stderr },
+      })
+      return
+    }
+    console.log(`Terminal Output: ${stdout}`)
+    channel.send({
+      event: "run-command",
+      type: "broadcast",
+      payload: { message: stdout },
+    })
+  })
+}
+
 const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
   console.log(blueBright(JSON.stringify({ payload, event })))
   switch (event) {
@@ -230,6 +318,12 @@ const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
       return handleGetFile(payload)
     case "get-all-files":
       return handleGetAllFilePaths()
+    case "start-dev-server":
+      return startDevServer(payload)
+    case "stop-dev-server":
+      return stopDevServer()
+    case "run-command":
+      return runCommand(payload)
     default:
       console.log(redBright("Invalid event:"), event)
       channel.send({
