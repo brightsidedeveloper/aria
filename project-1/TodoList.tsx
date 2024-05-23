@@ -41,53 +41,44 @@ const TodoList: React.FC = () => {
   };
 
   return (
-    <div className="todo-list">
-      <h1>Todo List</h1>
-      <input 
-        type="text" 
-        value={newTodo} 
-        onChange={(e) => setNewTodo(e.target.value)} 
-        placeholder="Add a new task" 
-      />
-      <button onClick={addTodo}>Add Todo</button>
-      <ul>
+    <div className="p-6 max-w-sm mx-auto bg-white rounded-xl shadow-md space-y-4">
+      <h1 className="text-2xl font-bold">Todo List</h1>
+      <div className="flex space-x-2">
+        <input 
+          type="text" 
+          value={newTodo} 
+          onChange={(e) => setNewTodo(e.target.value)} 
+          placeholder="Add a new task" 
+          className="flex-grow p-2 border rounded"
+        />
+        <button 
+          onClick={addTodo} 
+          className="p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Add Todo
+        </button>
+      </div>
+      <ul className="space-y-2">
         {todos.map(todo => (
-          <li key={todo.id} className={todo.completed ? 'completed' : ''}>
-            <span onClick={() => toggleTodo(todo.id)}>
+          <li 
+            key={todo.id} 
+            className={`flex justify-between items-center p-2 border rounded ${todo.completed ? 'line-through text-gray-500' : ''}`}
+          >
+            <span 
+              onClick={() => toggleTodo(todo.id)} 
+              className="flex-grow cursor-pointer"
+            >
               {todo.text}
             </span>
-            <button onClick={() => deleteTodo(todo.id)}>Delete</button>
+            <button 
+              onClick={() => deleteTodo(todo.id)} 
+              className="p-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Delete
+            </button>
           </li>
         ))}
       </ul>
-      <style jsx>{`
-        .todo-list {
-          font-family: Arial, sans-serif;
-          text-align: center;
-        }
-        input {
-          padding: 10px;
-          margin: 10px;
-          font-size: 16px;
-        }
-        button {
-          padding: 10px;
-          font-size: 16px;
-        }
-        ul {
-          list-style: none;
-          padding: 0;
-        }
-        li {
-          padding: 10px;
-          font-size: 18px;
-          cursor: pointer;
-        }
-        .completed {
-          text-decoration: line-through;
-          color: grey;
-        }
-      `}</style>
     </div>
   );
 };
