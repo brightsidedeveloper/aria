@@ -212,12 +212,12 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
 const handleGetAllFilePaths = async () => {
   const rootDir = path.resolve(__dirname) // Get the absolute path of the root directory
   const allFiles = getAllFiles(rootDir)
+  console.log(green("Retrieved all file paths successfully"))
   channel.send({
     event: "return-all-files",
     type: "broadcast",
     payload: { files: allFiles },
   })
-  console.log(green("Retrieved all file paths successfully"))
 }
 
 let devProcess: ReturnType<typeof spawn> | null = null
