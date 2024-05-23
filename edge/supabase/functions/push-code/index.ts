@@ -25,7 +25,7 @@ Deno.serve(async req => {
     return await new Promise(resolve => {
       let tries = 0
       const interval = setInterval(() => {
-        if (responded || tries >= 180) {
+        if (responded || tries >= 80) {
           clearInterval(interval)
           resolve(responded)
         }
