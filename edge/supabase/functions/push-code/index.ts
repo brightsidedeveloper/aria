@@ -7,27 +7,62 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.43.2'
 
-
-Deno.serve(async (req) => {
+Deno.serve(async req => {
   const supabase = createClient(
     'https://dyiynfghnhxawehqnred.supabase.co',
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR5aXluZmdobmh4YXdlaHFucmVkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTYyNDYwNDgsImV4cCI6MjAzMTgyMjA0OH0.R9A2a4eLwXNKdQpHD0HfxciNZDfinik-cf7fLfp69xI',
     { global: { headers: { Authorization: req.headers.get('Authorization')! } } }
   )
 
-  const { code, path } = await req.json()
+  const { code, path, commitMsg, action } = await req.json()
 
-  const channel = await supabase.channel('aria').send({
-    type: 'broadcast',
-    event: 'push-code',
-    payload: { code, path },
-  })
+  const channel = supabase.channel('aria')
+  let responded = false
 
+  channel.on('broadcast', { event: '*' }, (payload: any) => (responded = payload)).subscribe()
 
-  return new Response(
-    JSON.stringify({ success: true }),
-    { headers: { "Content-Type": "application/json" } },
-  )
+  const waitForResponse = async () => {
+    return await new Promise(resolve => {
+      let tries = 0
+      const interval = setInterval(() => {
+        if (responded || tries >= 80) {
+          clearInterval(interval)
+          resolve(responded)
+        }
+        tries++
+      }, 200)
+    })
+  }
+
+  switch (action) {
+    case 'create-file':
+      if (!code || !path) return new Response(JSON.stringify({ message: 'Missing code or path!' }), { headers: { 'Content-Type': 'application/json' } })
+      await channel.send({ event: 'create-file', type: 'broadcast', payload: { code, path } })
+      break
+    case 'delete-file':
+      if (!path) return new Response(JSON.stringify({ message: 'Missing path!' }), { headers: { 'Content-Type': 'application/json' } })
+      await channel.send({ event: 'delete-file', type: 'broadcast', payload: { path } })
+      break
+    case 'push-file':
+      if (!path) return new Response(JSON.stringify({ message: 'Missing code, path, or commit message!' }), { headers: { 'Content-Type': 'application/json' } })
+      await channel.send({ event: 'push-file', type: 'broadcast', payload: { code, path, commitMsg } })
+      break
+    case 'get-file':
+      if (!path) return new Response(JSON.stringify({ message: 'Missing path!' }), { headers: { 'Content-Type': 'application/json' } })
+      await channel.send({ event: 'get-file', type: 'broadcast', payload: { path } })
+      const fileCode = await waitForResponse()
+      if (!fileCode) return new Response(JSON.stringify({ message: 'Failed to retrieve file!' }), { headers: { 'Content-Type': 'application/json' } })
+      break
+    case 'get-all-files':
+      await channel.send({ event: 'get-all-files', type: 'broadcast', payload: {} })
+      const files = await waitForResponse()
+      if (!files) return new Response(JSON.stringify({ message: 'Failed to retrieve all files!' }), { headers: { 'Content-Type': 'application/json' } })
+      break
+    default:
+      return new Response(JSON.stringify({ message: 'Action does not exist!' }), { headers: { 'Content-Type': 'application/json' } })
+  }
+
+  return new Response(JSON.stringify(responded ? { ...(responded as {}), success: true } : { success: true }), { headers: { 'Content-Type': 'application/json' } })
 })
 
 /* To invoke locally:

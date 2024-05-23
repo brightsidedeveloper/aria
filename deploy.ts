@@ -27,8 +27,14 @@ interface Payload {
 const handleCreateFile = async ({ code, path: filePath }: Payload) => {
   if (!code || !filePath) return console.log('Invalid payload')
 
-  const finalPath = path.join(__dirname, filePath)
-  fs.writeFileSync(finalPath, code, 'utf8')
+  const ensureFolderPath = filePath.split('/').slice(0, -1).join('/')
+  handleCreateFolder({ path: ensureFolderPath })
+  try {
+    const finalPath = path.join(__dirname, filePath)
+    fs.writeFileSync(finalPath, code, 'utf8')
+  } catch (error) {
+    console.error('Failed to create file:', error)
+  }
 }
 
 const handleDeleteFile = async ({ path: filePath }: Payload) => {
@@ -76,18 +82,6 @@ const handleCreateFolder = async ({ path: folderPath }: Payload) => {
   }
 }
 
-const handleDeleteFolder = async ({ path: folderPath }: Payload) => {
-  if (!folderPath) return console.log('Invalid payload')
-
-  const finalPath = path.join(__dirname, folderPath)
-  if (fs.existsSync(finalPath)) {
-    fs.rmdirSync(finalPath, { recursive: true })
-    console.log(`Folder deleted at: ${finalPath}`)
-  } else {
-    console.log('Folder does not exist:', finalPath)
-  }
-}
-
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   const files = fs.readdirSync(dirPath)
 
@@ -128,10 +122,6 @@ const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
       return handleGetFile(payload)
     case 'get-all-files':
       return handleGetAllFilePaths()
-    case 'create-folder':
-      return handleCreateFolder(payload)
-    case 'delete-folder':
-      return handleDeleteFolder(payload)
     default:
       console.log('Invalid event:', event)
   }
