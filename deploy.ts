@@ -113,10 +113,6 @@ const handleCreateFolder = async ({ path: folderPath }: Payload) => {
   if (!fs.existsSync(finalPath)) {
     fs.mkdirSync(finalPath, { recursive: true })
     console.log(green(`Folder created at: ${finalPath}`))
-    channel.send({ event: 'create-folder', type: 'broadcast', payload: { message: `Folder created at: ${finalPath}`, path: folderPath } })
-  } else {
-    console.log(redBright('Folder already exists:'), finalPath)
-    channel.send({ event: 'create-folder', type: 'broadcast', payload: { message: 'Folder already exists', path: folderPath } })
   }
 }
 
