@@ -19,28 +19,126 @@ interface BroadcastPayload {
 }
 
 interface Payload {
-  code: string
+  code?: string
   path: string
+  commitMsg?: string
 }
 
-const handleBroadcast = async ({ payload: { code, path: filePath } }: BroadcastPayload) => {
+const handleCreateFile = async ({ code, path: filePath }: Payload) => {
   if (!code || !filePath) return console.log('Invalid payload')
 
   const finalPath = path.join(__dirname, filePath)
   fs.writeFileSync(finalPath, code, 'utf8')
+}
 
+const handleDeleteFile = async ({ path: filePath }: Payload) => {
+  if (!filePath) return console.log('Invalid payload')
+
+  const finalPath = path.join(__dirname, filePath)
+
+  if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath)
+  else console.log('File does not exist:', finalPath)
+}
+
+const handlePushFile = async ({ path: filePath, commitMsg = 'Add Changes' }: Payload) => {
+  if (!filePath) return console.log('Invalid payload')
+
+  const finalPath = path.join(__dirname, filePath)
   try {
     await git.add(finalPath)
-    await git.commit('Add generated file')
+    await git.commit(commitMsg)
     await git.push('origin', 'main') // Ensure 'main' is the correct branch
-    console.log('File pushed to GitHub successfully!')
+    console.log('File updated and pushed to GitHub successfully!')
   } catch (error) {
-    console.error('Failed to push file to GitHub:', error)
+    console.error('Failed to push file update to GitHub:', error)
+  }
+}
+
+const handleGetFile = async ({ path: filePath }: Payload) => {
+  if (!filePath) return console.log('Invalid payload')
+
+  const finalPath = path.join(__dirname, filePath)
+  if (fs.existsSync(finalPath)) {
+    const code = fs.readFileSync(finalPath, 'utf8')
+    channel.send({ event: 'return-file', type: 'broadcast', payload: { code, path: filePath } })
+  }
+}
+
+const handleCreateFolder = async ({ path: folderPath }: Payload) => {
+  if (!folderPath) return console.log('Invalid payload')
+
+  const finalPath = path.join(__dirname, folderPath)
+  if (!fs.existsSync(finalPath)) {
+    fs.mkdirSync(finalPath, { recursive: true })
+    console.log(`Folder created at: ${finalPath}`)
+  } else {
+    console.log('Folder already exists:', finalPath)
+  }
+}
+
+const handleDeleteFolder = async ({ path: folderPath }: Payload) => {
+  if (!folderPath) return console.log('Invalid payload')
+
+  const finalPath = path.join(__dirname, folderPath)
+  if (fs.existsSync(finalPath)) {
+    fs.rmdirSync(finalPath, { recursive: true })
+    console.log(`Folder deleted at: ${finalPath}`)
+  } else {
+    console.log('Folder does not exist:', finalPath)
+  }
+}
+
+function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
+  const files = fs.readdirSync(dirPath)
+
+  files.forEach(file => {
+    const filePath = path.join(dirPath, file)
+
+    // Ignore node_modules and .git folders
+    if (file === 'node_modules' || file === '.git') {
+      return
+    }
+
+    if (fs.statSync(filePath).isDirectory()) {
+      arrayOfFiles = getAllFiles(filePath, arrayOfFiles)
+    } else {
+      arrayOfFiles.push(path.relative(__dirname, filePath))
+    }
+  })
+
+  return arrayOfFiles
+}
+
+const handleGetAllFilePaths = async () => {
+  const rootDir = path.resolve(__dirname) // Get the absolute path of the root directory
+  const allFiles = getAllFiles(rootDir)
+  channel.send({ event: 'return-all-files', type: 'broadcast', payload: { files: allFiles } })
+}
+
+const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
+  console.log({ payload, event })
+  switch (event) {
+    case 'create-file':
+      return handleCreateFile(payload)
+    case 'delete-file':
+      return handleDeleteFile(payload)
+    case 'push-file':
+      return handlePushFile(payload)
+    case 'get-file':
+      return handleGetFile(payload)
+    case 'get-all-files':
+      return handleGetAllFilePaths()
+    case 'create-folder':
+      return handleCreateFolder(payload)
+    case 'delete-folder':
+      return handleDeleteFolder(payload)
+    default:
+      console.log('Invalid event:', event)
   }
 }
 
 const channel = supabase.channel('aria')
 
-channel.on('broadcast', { event: 'push-code' }, handleBroadcast).subscribe()
+channel.on('broadcast', { event: '*' }, handleBroadcast).subscribe()
 
 process.stdin.resume() // Keep process alive
