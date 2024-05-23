@@ -6,10 +6,16 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
 
     files.forEach(file => {
         const filePath = path.join(dirPath, file);
+
+        // Ignore node_modules and .git folders
+        if (file === 'node_modules' || file === '.git') {
+            return;
+        }
+
         if (fs.statSync(filePath).isDirectory()) {
             arrayOfFiles = getAllFiles(filePath, arrayOfFiles);
         } else {
-            arrayOfFiles.push(filePath);
+            arrayOfFiles.push(path.relative(__dirname, filePath));
         }
     });
 
