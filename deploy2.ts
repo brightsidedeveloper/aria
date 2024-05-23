@@ -25,29 +25,47 @@ interface Payload {
 }
 
 const handleCreateFile = async ({ code, path: filePath }: Payload) => {
-  if (!code || !filePath) return console.log('Invalid payload')
+  if (!code || !filePath) {
+    channel.send({ event: 'create-file', type: 'broadcast', payload: { message: 'Invalid payload: Missing code or path' } })
+    return
+  }
 
   const ensureFolderPath = filePath.split('/').slice(0, -1).join('/')
   handleCreateFolder({ path: ensureFolderPath })
   try {
     const finalPath = path.join(__dirname, filePath)
     fs.writeFileSync(finalPath, code, 'utf8')
+    console.log(`File created successfully at ${filePath}`)
+    channel.send({ event: 'create-file', type: 'broadcast', payload: { message: `File created successfully at ${filePath}`, path: filePath } })
   } catch (error) {
     console.error('Failed to create file:', error)
+    channel.send({ event: 'create-file', type: 'broadcast', payload: { message: `Failed to create file: ${error.message}`, path: filePath } })
   }
 }
 
 const handleDeleteFile = async ({ path: filePath }: Payload) => {
-  if (!filePath) return console.log('Invalid payload')
+  if (!filePath) {
+    channel.send({ event: 'delete-file', type: 'broadcast', payload: { message: 'Invalid payload: Missing path' } })
+    return
+  }
 
   const finalPath = path.join(__dirname, filePath)
 
-  if (fs.existsSync(finalPath)) fs.unlinkSync(finalPath)
-  else console.log('File does not exist:', finalPath)
+  if (fs.existsSync(finalPath)) {
+    fs.unlinkSync(finalPath)
+    console.log(`File deleted successfully from ${filePath}`)
+    channel.send({ event: 'delete-file', type: 'broadcast', payload: { message: `File deleted successfully from ${filePath}`, path: filePath } })
+  } else {
+    console.log('File does not exist:', finalPath)
+    channel.send({ event: 'delete-file', type: 'broadcast', payload: { message: 'File does not exist', path: filePath } })
+  }
 }
 
 const handlePushFile = async ({ path: filePath, commitMsg = 'Add Changes' }: Payload) => {
-  if (!filePath) return console.log('Invalid payload')
+  if (!filePath) {
+    channel.send({ event: 'push-file', type: 'broadcast', payload: { message: 'Invalid payload: Missing path' } })
+    return
+  }
 
   const finalPath = path.join(__dirname, filePath)
   try {
@@ -55,32 +73,44 @@ const handlePushFile = async ({ path: filePath, commitMsg = 'Add Changes' }: Pay
     await git.commit(commitMsg)
     await git.push('origin', 'main') // Ensure 'main' is the correct branch
     console.log('File updated and pushed to GitHub successfully!')
+    channel.send({ event: 'push-file', type: 'broadcast', payload: { message: 'File updated and pushed to GitHub successfully!', path: filePath } })
   } catch (error) {
     console.error('Failed to push file update to GitHub:', error)
+    channel.send({ event: 'push-file', type: 'broadcast', payload: { message: `Failed to push file update to GitHub: ${error.message}`, path: filePath } })
   }
 }
 
 const handleGetFile = async ({ path: filePath }: Payload) => {
-  if (!filePath) return console.log('Invalid payload')
+  if (!filePath) {
+    channel.send({ event: 'get-file', type: 'broadcast', payload: { message: 'Invalid payload: Missing path' } })
+    return
+  }
 
   const finalPath = path.join(__dirname, filePath)
   if (fs.existsSync(finalPath)) {
     const code = fs.readFileSync(finalPath, 'utf8')
     channel.send({ event: 'return-file', type: 'broadcast', payload: { code, path: filePath } })
+    console.log(`File retrieved successfully from ${filePath}`)
   } else {
     console.log('File does not exist:', finalPath)
+    channel.send({ event: 'return-file', type: 'broadcast', payload: { message: 'File does not exist', path: filePath } })
   }
 }
 
 const handleCreateFolder = async ({ path: folderPath }: Payload) => {
-  if (!folderPath) return console.log('Invalid payload')
+  if (!folderPath) {
+    channel.send({ event: 'create-folder', type: 'broadcast', payload: { message: 'Invalid payload: Missing path' } })
+    return
+  }
 
   const finalPath = path.join(__dirname, folderPath)
   if (!fs.existsSync(finalPath)) {
     fs.mkdirSync(finalPath, { recursive: true })
     console.log(`Folder created at: ${finalPath}`)
+    channel.send({ event: 'create-folder', type: 'broadcast', payload: { message: `Folder created at: ${finalPath}`, path: folderPath } })
   } else {
     console.log('Folder already exists:', finalPath)
+    channel.send({ event: 'create-folder', type: 'broadcast', payload: { message: 'Folder already exists', path: folderPath } })
   }
 }
 
@@ -109,6 +139,7 @@ const handleGetAllFilePaths = async () => {
   const rootDir = path.resolve(__dirname) // Get the absolute path of the root directory
   const allFiles = getAllFiles(rootDir)
   channel.send({ event: 'return-all-files', type: 'broadcast', payload: { files: allFiles } })
+  console.log('Retrieved all file paths successfully')
 }
 
 const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
@@ -126,6 +157,7 @@ const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
       return handleGetAllFilePaths()
     default:
       console.log('Invalid event:', event)
+      channel.send({ event: 'invalid-event', type: 'broadcast', payload: { message: 'Invalid event' } })
   }
 }
 
