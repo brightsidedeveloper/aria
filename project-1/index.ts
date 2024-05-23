@@ -1,0 +1,1 @@
+console.log('Welcome to Project 1! Enjoy your coding journey!');
