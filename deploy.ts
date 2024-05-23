@@ -1,9 +1,9 @@
-import fs from 'fs'
-import simpleGit from 'simple-git'
-import path from 'path'
+import fs from "fs"
+import simpleGit from "simple-git"
+import path from "path"
 
-import { createClient } from '@supabase/supabase-js'
-import dotenv from 'dotenv'
+import { createClient } from "@supabase/supabase-js"
+import dotenv from "dotenv"
 
 import { magenta, cyan, redBright, green, blueBright } from 'colorette'
 
@@ -32,7 +32,7 @@ const handleCreateFile = async ({ code, path: filePath }: Payload) => {
     return
   }
 
-  const ensureFolderPath = filePath.split('/').slice(0, -1).join('/')
+  const ensureFolderPath = filePath.split("/").slice(0, -1).join("/")
   handleCreateFolder({ path: ensureFolderPath })
   try {
     const finalPath = path.join(__dirname, filePath)
@@ -113,17 +113,19 @@ const handleCreateFolder = async ({ path: folderPath }: Payload) => {
   if (!fs.existsSync(finalPath)) {
     fs.mkdirSync(finalPath, { recursive: true })
     console.log(green(`Folder created at: ${finalPath}`))
+  } else {
+    console.log("Folder already exists:", finalPath)
   }
 }
 
 function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   const files = fs.readdirSync(dirPath)
 
-  files.forEach(file => {
+  files.forEach((file) => {
     const filePath = path.join(dirPath, file)
 
     // Ignore node_modules and .git folders
-    if (file === 'node_modules' || file === '.git') {
+    if (file === "node_modules" || file === ".git") {
       return
     }
 
@@ -147,15 +149,15 @@ const handleGetAllFilePaths = async () => {
 const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
   console.log(blueBright(JSON.stringify({ payload, event })))
   switch (event) {
-    case 'create-file':
+    case "create-file":
       return handleCreateFile(payload)
-    case 'delete-file':
+    case "delete-file":
       return handleDeleteFile(payload)
-    case 'push-file':
+    case "push-file":
       return handlePushFile(payload)
-    case 'get-file':
+    case "get-file":
       return handleGetFile(payload)
-    case 'get-all-files':
+    case "get-all-files":
       return handleGetAllFilePaths()
     default:
       console.log(redBright('Invalid event:'), event)
@@ -163,9 +165,9 @@ const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
   }
 }
 
-const channel = supabase.channel('aria')
+const channel = supabase.channel("arya")
 
-channel.on('broadcast', { event: '*' }, handleBroadcast).subscribe()
+channel.on("broadcast", { event: "*" }, handleBroadcast).subscribe()
 
 const logAriaGPT = () => {
   console.log(
