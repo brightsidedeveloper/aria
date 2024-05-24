@@ -26,7 +26,8 @@ interface Payload {
   code?: string
   commitMsg?: string
   command?: string
-  path: string
+  path?: string
+  paths?: string[]
 }
 
 const handleCreateFile = async ({ code, path: filePath }: Payload) => {
@@ -140,9 +141,9 @@ const handlePushFile = async ({ path: filePath, commitMsg = 'Add Changes' }: Pay
 const handleGetFile = async ({ path: filePath }: Payload) => {
   if (!filePath) {
     channel.send({
-      event: 'get-file',
+      event: 'read-file',
       type: 'broadcast',
-      payload: { message: 'Invalid payload: Missing path' },
+      payload: { message: 'Invalid payload: Missing path in handleGetFile' },
     })
     return
   }
@@ -166,12 +167,45 @@ const handleGetFile = async ({ path: filePath }: Payload) => {
   }
 }
 
+const handleGetFiles = async ({ paths }: Payload) => {
+  if (!Array.isArray(paths) || paths.length === 0) {
+    console.log(redBright('Invalid payload: Missing paths in handleGetFiles'))
+    channel.send({
+      event: 'read-files',
+      type: 'broadcast',
+      payload: { message: 'Invalid payload: Missing paths in handleGetFiles' },
+    })
+    return
+  }
+
+  const filePromises = paths.map(async filePath => {
+    const finalPath = path.join(__dirname, filePath)
+    try {
+      await fs.promises.access(finalPath)
+      const code = await fs.promises.readFile(finalPath, 'utf8')
+      return { code, path: filePath }
+    } catch (error) {
+      console.log(redBright('File does not exist or error accessing file:'), finalPath, error)
+      return { message: 'File does not exist or error accessing file', path: filePath }
+    }
+  })
+
+  const files = await Promise.all(filePromises)
+
+  channel.send({
+    event: 'return-files',
+    type: 'broadcast',
+    payload: { files },
+  })
+  console.log(green('Files retrieved successfully'))
+}
+
 const handleCreateFolder = async ({ path: folderPath }: Payload) => {
   if (!folderPath) {
     channel.send({
       event: 'create-folder',
       type: 'broadcast',
-      payload: { message: 'Invalid payload: Missing path' },
+      payload: { message: 'Invalid payload: Missing path in handleCreateFolder' },
     })
     return
   }
@@ -204,7 +238,7 @@ function getAllFiles(dirPath: string, arrayOfFiles: string[] = []): string[] {
   return arrayOfFiles
 }
 
-const handleGetAllFilePaths = async () => {
+const handleGetDirectories = async () => {
   const rootDir = path.resolve(__dirname) // Get the absolute path of the root directory
   try {
     const allFiles = getAllFiles(rootDir)
@@ -353,10 +387,12 @@ const handleBroadcast = async ({ payload, event }: BroadcastPayload) => {
       return handleDeleteFile(payload)
     case 'push-file':
       return handlePushFile(payload)
-    case 'get-file':
+    case 'read-file':
       return handleGetFile(payload)
-    case 'get-all-files':
-      return handleGetAllFilePaths()
+    case 'read-files':
+      return handleGetFiles(payload)
+    case 'get-directories':
+      return handleGetDirectories()
     case 'start-dev-server':
       return startDevServer(payload)
     case 'stop-dev-server':
