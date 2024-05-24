@@ -7,7 +7,7 @@ import path from 'path'
 import { createClient } from '@supabase/supabase-js'
 import dotenv from 'dotenv'
 
-import { magenta, cyan, redBright, green, blueBright } from 'colorette'
+import { magenta, cyan, redBright, green, blueBright, yellow } from 'colorette'
 
 // Load environment variables from .env file
 dotenv.config()
@@ -229,7 +229,6 @@ let devProcess: ReturnType<typeof spawn> | null = null
 const stopDevServer = (fromStart?: boolean) => {
   if (devProcess) {
     devProcess.kill('SIGINT')
-    console.log('Development server stopped.')
     if (!fromStart)
       channel.send({
         event: 'stop-dev-server',
@@ -237,7 +236,7 @@ const stopDevServer = (fromStart?: boolean) => {
         payload: { message: 'Development server stopped' },
       })
   } else {
-    console.log('No development server is running.')
+    console.log(yellow('No development server is running.'))
     if (!fromStart)
       channel.send({
         event: 'stop-dev-server',
@@ -272,7 +271,7 @@ const startDevServer = ({ path: filePath }: Payload) => {
         })
       })
       .on('exit', code => {
-        if (code === 0) {
+        if (code === 0 || code === null) {
           console.log(green('Development server stopped.'))
           channel.send({
             event: 'start-dev-server',
