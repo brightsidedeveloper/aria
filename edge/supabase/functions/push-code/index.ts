@@ -9,7 +9,7 @@ Deno.serve(async req => {
     }
   )
 
-  const { code, path, commitMsg, command, action, paths } = await req.json()
+  const { code, path, commitMsg, command, localAction, paths } = await req.json()
 
   const channel = supabase.channel('aria')
   let responded = false
@@ -29,7 +29,7 @@ Deno.serve(async req => {
     })
   }
 
-  switch (action) {
+  switch (localAction) {
     case 'get-directories':
       await channel.send({
         event: 'get-directories',
