@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import Intro from './components/Intro';
 import Outro from './components/Outro';
+import Middletro from './components/Middletro';
 
 const App: React.FC = () => {
-  const [showIntro, setShowIntro] = useState(true);
+  const [currentComponent, setCurrentComponent] = useState('Intro');
 
   useEffect(() => {
+    const components = ['Intro', 'Middletro', 'Outro'];
+    let index = 0;
     const interval = setInterval(() => {
-      setShowIntro((prevShowIntro) => !prevShowIntro);
+      index = (index + 1) % components.length;
+      setCurrentComponent(components[index]);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -15,7 +19,9 @@ const App: React.FC = () => {
 
   return (
     <div>
-      {showIntro ? <Intro /> : <Outro />}
+      {currentComponent === 'Intro' && <Intro />}
+      {currentComponent === 'Middletro' && <Middletro />}
+      {currentComponent === 'Outro' && <Outro />}
     </div>
   );
 }
