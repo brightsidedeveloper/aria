@@ -6,7 +6,7 @@ const App: React.FC = () => {
   const [currentComponent, setCurrentComponent] = useState("Intro")
 
   useEffect(() => {
-    const components = ["Intro", "Middletro", "Outro"]
+    const components = ["Intro", "Outro"]
     let index = 0
     const interval = setInterval(() => {
       index = (index + 1) % components.length
