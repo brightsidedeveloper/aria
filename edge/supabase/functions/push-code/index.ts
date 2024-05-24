@@ -86,7 +86,7 @@ Deno.serve(async req => {
           }),
           { headers: { 'Content-Type': 'application/json' } }
         )
-
+      break
     case 'create-file':
       if (!code || !path) return new Response(JSON.stringify({ message: 'Missing code or path!' }), { headers: { 'Content-Type': 'application/json' } })
       await channel.send({
