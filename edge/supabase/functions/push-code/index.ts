@@ -9,8 +9,7 @@ Deno.serve(async req => {
     }
   )
 
-  const { code, path, commitMsg, command, localAction, paths } = await req.json()
-
+  const { code, path, commitMsg, command, localAction, paths, content } = await req.json()
   const channel = supabase.channel('aria')
   let responded = false
 
@@ -30,6 +29,23 @@ Deno.serve(async req => {
   }
 
   switch (localAction) {
+    case 'run-command':
+      if (!path || !command) return new Response(JSON.stringify({ message: 'Missing code or path!' }), { headers: { 'Content-Type': 'application/json' } })
+      await channel.send({
+        event: 'run-command',
+        type: 'broadcast',
+        payload: { command, path },
+      })
+      await resolveResponse()
+      break
+    case 'clipboard':
+      await channel.send({
+        event: 'clipboard',
+        type: 'broadcast',
+        payload: { content },
+      })
+      await resolveResponse()
+      break
     case 'get-directories':
       await channel.send({
         event: 'get-directories',
@@ -44,9 +60,7 @@ Deno.serve(async req => {
           }),
           { headers: { 'Content-Type': 'application/json' } }
         )
-      return new Response(JSON.stringify({ files }), {
-        headers: { 'Content-Type': 'application/json' },
-      })
+      break
     case 'read-file':
       if (!path)
         return new Response(JSON.stringify({ message: 'Missing path!' }), {
@@ -65,9 +79,7 @@ Deno.serve(async req => {
           }),
           { headers: { 'Content-Type': 'application/json' } }
         )
-      return new Response(JSON.stringify({ code: fileCode }), {
-        headers: { 'Content-Type': 'application/json' },
-      })
+      break
     case 'read-files':
       if (!paths)
         return new Response(JSON.stringify({ message: 'Missing paths!' }), {
@@ -134,15 +146,6 @@ Deno.serve(async req => {
         event: 'stop-dev-server',
         type: 'broadcast',
         payload: {},
-      })
-      await resolveResponse()
-      break
-    case 'run-command':
-      if (!path || !command) return new Response(JSON.stringify({ message: 'Missing code or path!' }), { headers: { 'Content-Type': 'application/json' } })
-      await channel.send({
-        event: 'run-command',
-        type: 'broadcast',
-        payload: { command, path },
       })
       await resolveResponse()
       break
