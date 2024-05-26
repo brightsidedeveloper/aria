@@ -4,7 +4,7 @@ import { Payload, channel } from './deploy'
 
 export const handleClipboard = async ({ content }: Payload) => {
   if (content) handleSetClipboard({ content })
-  handleGetClipboard()
+  else handleGetClipboard()
 }
 
 const handleGetClipboard = async () => {
