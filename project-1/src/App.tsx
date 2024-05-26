@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react"
 import Intro from "./components/Intro"
 import Outro from "./components/Outro"
-import Middletro from "./components/Middletro"
 
 const App: React.FC = () => {
   const [currentComponent, setCurrentComponent] = useState("Intro")
@@ -20,7 +19,6 @@ const App: React.FC = () => {
   return (
     <div>
       {currentComponent === "Intro" && <Intro />}
-      {currentComponent === "Middletro" && <Middletro />}
       {currentComponent === "Outro" && <Outro />}
     </div>
   )
